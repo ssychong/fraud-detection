@@ -61,6 +61,8 @@ class Pipeline(object):
                 tuning_params = [{'C': [1, 10, 100, 100000]}]
             elif (str(model())).startswith('RandomForestClassifier') or (str(model)).startswith('GradientBoostingClassifier'):
                 tuning_params = [{'max_depth': [2]}]
+            ### add gridsearch for SVM
+
             grid = GridSearchCV(model(), tuning_params, cv=5, scoring='f1_macro')
             grid.fit(x_data, y_data)
             params = grid.best_params_
@@ -251,7 +253,7 @@ def baseline(y_train):
     '''
     #imported random
     prob_fraud = sum(y_train)/float(len(y_train))
-    isfraud = Nonegi
+    isfraud = None
     if random.random() > prob_fraud:
         isfraud = False
     else:
