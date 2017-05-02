@@ -13,6 +13,7 @@ class DataCleaning(object):
         """
         self.df = pd.read_csv(filepath)
 
+
     def make_target_variable(self):
         """Create the churn column, which is our target variable y that we are trying to predict
         A customer is considered churned if they haven't taken trip in last 30 days"""
@@ -59,33 +60,18 @@ class DataCleaning(object):
         for col in cols:
             self.df[col].fillna('missing', inplace=True)
 
-    def make_rating_dummies(self):
-        """Create categorical dummy columns based on ratings of driver and then remove original average rating of driver column
-        5star_driver: user always rates driver with 5 stars
-        missing_dr_rating: data on how user rated driving missing or they never rated
-        non5star_driver: user did not always rate driver with 5 stars"""
-        self.df['5star_driver'] = (self.df.avg_rating_of_driver==5.)
-        self.df['missing_dr_rating'] = (self.df.avg_rating_of_driver=='missing')
-        self.df['non5star_driver'] = (self.df.avg_rating_of_driver!='missing') & (self.df.avg_rating_of_driver!=5.)
-        self.df = self.df.drop('avg_rating_of_driver', axis=1)
+    def drop_all_non_numeric(self):
+        self.df = self.df.head(1000)
+        self.df = self.df[['fraud', 'body_length', 'channels', 'num_payouts', 'org_twitter']]
+        #self.df.drop(['approx_payout_date', 'country',  ])
 
     def clean(self, regression=False):
         """Executes all cleaning methods in proper order. If regression, remove one
         dummy column and scale numeric columns for regularization"""
-        self.make_target_variable()
-        self.mark_missing(['avg_rating_of_driver'])
+        self.drop_all_non_numeric()
         self.drop_na()
-        self.make_rating_dummies()
-        self.drop_date_columns()
 
-        for column in ['avg_dist', 'trips_in_first_30_days', 'surge_pct']:
-           self.cut_outliers(column)
-
-        for column in ['city', 'phone']:
-            self.dummify(column)
-
-        y = self.df.pop('Churn').values
-        X = self.df
+        y = self.df.pop('fraud').values
 
         if regression:
             self.drop_columns_for_regression()
