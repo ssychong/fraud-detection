@@ -1,17 +1,32 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import scale
+from sklearn.model_selection import train_test_split
 
 class DataCleaning(object):
     """An object to clean and wrangle data into format for a model"""
 
-    def __init__(self, filepath):
+    def __init__(self, filepath, training=True):
         """Reads in data
 
         Args:
             fileapth (str): location of file with csv data
         """
-        self.df = pd.read_csv(filepath)
+        self.df = pd.read_json(filepath)
+        self.df['fraud'] = self.df['acct_type'].isin(['fraudster_event', 'fraudster', 'fraudster_att'])
+        Y = self.df.pop('fraud').values
+        X = self.df.values
+        cols = self.df.columns
+        X_train, X_test, y_train, y_test = train_test_split(X, Y, train_size=.8, random_state=123)
+        self.training = pd.DataFrame(X_train, columns=cols)
+        self.training['fraud'] = y_train
+        self.test = pd.DataFrame(X_test, columns=cols)
+        self.test['fraud'] = y_test
+        if training:
+            self.df = self.training
+        else:
+            print "using test data"
+            self.df = self.test
 
 
     def make_target_variable(self):

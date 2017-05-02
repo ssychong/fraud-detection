@@ -244,12 +244,12 @@ def plot_rocs(pipes, datasets):
 
 
 def main():
-    train_path = "data/training.csv"
-    test_path = "data/test.csv"
+    train_path = "data/data.json"
+    #test_path = "data/test.csv"
     dc_train = DataCleaning(train_path)
-    dc_test = DataCleaning(test_path)
+    #dc_test = DataCleaning(test_path)
     X_train, y_train = dc_train.clean()
-    X_test, y_test = dc_test.clean()
+    #X_test, y_test = dc_test.clean()
 
     # dc_train_reg = DataCleaning(train_path)
     # dc_test_reg = DataCleaning(test_path)
