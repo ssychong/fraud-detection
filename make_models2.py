@@ -243,6 +243,28 @@ def plot_rocs(pipes, datasets):
     plt.show()
 
 
+def baseline(y_train):
+    ''' this model predicts a either 1 or 0 (True or False) based on the probability from the
+    training data that a value is either True or False
+
+    for the fraud case_study
+    '''
+    #imported random
+    prob_fraud = sum(y_train)/float(len(y_train))
+    isfraud = Nonegi
+    if random.random() > prob_fraud:
+        isfraud = False
+    else:
+        isfraud = True
+    return isfraud
+
+def baseline_stats(y_train,y_test):
+    y_pred = []
+    for y in range(len(y_test)):
+        y_pred.append(baseline(y_train))
+    confus_mat = np.array(confusion_matrix(y_test, y_pred))
+    return precision_score(y_test,y_pred), accuracy_score(y_test,y_pred), recall_score(y_test,y_pred), f1_score(y_test,y_pred), confus_mat
+
 def main():
     train_path = "data/data.json"
     #test_path = "data/test.csv"
