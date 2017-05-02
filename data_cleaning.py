@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import scale
 from sklearn.model_selection import train_test_split
+from bs4 import BeautifulSoup
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 class DataCleaning(object):
     """An object to clean and wrangle data into format for a model"""
@@ -14,19 +16,16 @@ class DataCleaning(object):
         """
         self.df = pd.read_json(filepath)
         self.df['fraud'] = self.df['acct_type'].isin(['fraudster_event', 'fraudster', 'fraudster_att'])
-        Y = self.df.pop('fraud').values
-        X = self.df.values
-        cols = self.df.columns
-        X_train, X_test, y_train, y_test = train_test_split(X, Y, train_size=.8, random_state=123)
-        self.training = pd.DataFrame(X_train, columns=cols)
-        self.training['fraud'] = y_train
-        self.test = pd.DataFrame(X_test, columns=cols)
-        self.test['fraud'] = y_test
+        index_list = range(len(self.df))
+        X_train, X_test = train_test_split(index_list, train_size=.8, random_state=123)
+        training_data = self.df.iloc[X_train,:]
+        test_data = self.df.iloc[X_test,:]
+
         if training:
-            self.df = self.training
+            self.df = training_data
         else:
             print "using test data"
-            self.df = self.test
+            self.df = test_data
 
 
     def make_target_variable(self):
@@ -76,15 +75,27 @@ class DataCleaning(object):
             self.df[col].fillna('missing', inplace=True)
 
     def drop_all_non_numeric(self):
-        self.df = self.df.head(1000)
+        #self.df = self.df.head(1000)
         self.df = self.df[['fraud', 'body_length', 'channels', 'num_payouts', 'org_twitter']]
         #self.df.drop(['approx_payout_date', 'country',  ])
+
+    def get_text(self, raw_html):
+        soup = BeautifulSoup(raw_html, "html.parser")
+        return soup.get_text()
+
+    def add_plaintext(self):
+        self.df['text_description'] = self.df['description'].apply(self.get_text)
+
+    def assign_text_cluster(self):
+        self.add_plaintext()
+
 
     def clean(self, regression=False):
         """Executes all cleaning methods in proper order. If regression, remove one
         dummy column and scale numeric columns for regularization"""
         self.drop_all_non_numeric()
         self.drop_na()
+        #self.assign_text_cluster()
 
         y = self.df.pop('fraud').values
 
