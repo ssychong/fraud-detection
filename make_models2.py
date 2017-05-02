@@ -29,7 +29,8 @@ class Pipeline(object):
             print "recall score: ", self.recall_scores[i]
             print "precision score: ", self.precision_scores[i]
 
-            self.get_variable_imp(model, feature_names)
+
+            #self.get_variable_imp(model, feature_names)
 
     def get_variable_imp(self, model, feature_names):
         """Prints how important each feature is and creates a bar chart showing relative feature importance for each model"""
@@ -59,7 +60,7 @@ class Pipeline(object):
             if str(model()).startswith("LogisticRegression"):
                 tuning_params = [{'C': [1, 10, 100, 100000]}]
             elif (str(model())).startswith('RandomForestClassifier') or (str(model)).startswith('GradientBoostingClassifier'):
-                tuning_params = [{'max_depth': [2, 3, 5]}]
+                tuning_params = [{'max_depth': [2]}]
             grid = GridSearchCV(model(), tuning_params, cv=5, scoring='f1_macro')
             grid.fit(x_data, y_data)
             params = grid.best_params_
@@ -243,20 +244,20 @@ def plot_rocs(pipes, datasets):
 
 
 def main():
-    train_path = "../data/churn_train.csv"
-    test_path = "../data/churn_test.csv"
+    train_path = "data/training.csv"
+    test_path = "data/test.csv"
     dc_train = DataCleaning(train_path)
     dc_test = DataCleaning(test_path)
     X_train, y_train = dc_train.clean()
     X_test, y_test = dc_test.clean()
 
-    dc_train_reg = DataCleaning(train_path)
-    dc_test_reg = DataCleaning(test_path)
-    X_train_reg, y_train_reg = dc_train_reg.clean(regression=True)
-    X_test_reg, y_test_reg = dc_test_reg.clean(regression=True)
+    # dc_train_reg = DataCleaning(train_path)
+    # dc_test_reg = DataCleaning(test_path)
+    # X_train_reg, y_train_reg = dc_train_reg.clean(regression=True)
+    # X_test_reg, y_test_reg = dc_test_reg.clean(regression=True)
 
     train_col_names = dc_train.get_column_names()
-    train_col_names_reg = dc_train_reg.get_column_names()
+    # train_col_names_reg = dc_train_reg.get_column_names()
 
     rf = RandomForestClassifier
     gb = GradientBoostingClassifier
@@ -266,13 +267,13 @@ def main():
     pipe.fit_predict(X_train, y_train)
     pipe.print_cv_results(train_col_names, X_train, y_train)
 
-    pipe2 = Pipeline([logr])
-    pipe2.fit_predict(X_train_reg, y_train_reg)
-    pipe2.print_cv_results(train_col_names_reg, X_train_reg, y_train_reg)
-
-    plot_rocs([pipe, pipe2], [[X_train, y_train], [X_train_reg, y_train_reg]])
-
-    test_scores = pipe.score(X_test, y_test)
+    # pipe2 = Pipeline([logr])
+    # pipe2.fit_predict(X_train_reg, y_train_reg)
+    # pipe2.print_cv_results(train_col_names_reg, X_train_reg, y_train_reg)
+    #
+    # plot_rocs([pipe, pipe2], [[X_train, y_train], [X_train_reg, y_train_reg]])
+    #
+    # test_scores = pipe.score(X_test, y_test)
     #print test_scores
 
 if __name__ == '__main__':
