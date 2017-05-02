@@ -70,7 +70,7 @@ class Pipeline(object):
             model_name = re.match(p, str(trained_model)).group(1)
             print "for {} model, best parameters were: {}".format(model_name, params)
 
-    def predict_and_cv_score(self, x_data, y_data):
+    def predict_and_cv_scgore(self, x_data, y_data):
         """Used by fit_predict to return model evaluation metrics through cross-validation"""
         f1_scores = []
         recall_scores = []
@@ -251,7 +251,7 @@ def baseline(y_train):
     '''
     #imported random
     prob_fraud = sum(y_train)/float(len(y_train))
-    isfraud = Nonegi
+    isfraud = None
     if random.random() > prob_fraud:
         isfraud = False
     else:
@@ -260,10 +260,17 @@ def baseline(y_train):
 
 def baseline_stats(y_train,y_test):
     y_pred = []
+    prob_fraud = sum(y_train)/float(len(y_train))
     for y in range(len(y_test)):
-        y_pred.append(baseline(y_train))
+        isfraud = None
+        if random.random() > prob_fraud:
+            isfraud = False
+        else:
+            isfraud = True
+        y_pred.append(isfraud)
     confus_mat = np.array(confusion_matrix(y_test, y_pred))
     return precision_score(y_test,y_pred), accuracy_score(y_test,y_pred), recall_score(y_test,y_pred), f1_score(y_test,y_pred), confus_mat
+
 
 def main():
     train_path = "data/data.json"
