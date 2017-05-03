@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import scale
 from sklearn.model_selection import train_test_split
+from bs4 import BeautifulSoup
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 class DataCleaning(object):
     """An object to clean and wrangle data into format for a model"""
@@ -14,19 +16,16 @@ class DataCleaning(object):
         """
         self.df = pd.read_json(filepath)
         self.df['fraud'] = self.df['acct_type'].isin(['fraudster_event', 'fraudster', 'fraudster_att'])
-        Y = self.df.pop('fraud').values
-        X = self.df.values
-        cols = self.df.columns
-        X_train, X_test, y_train, y_test = train_test_split(X, Y, train_size=.8, random_state=123)
-        self.training = pd.DataFrame(X_train, columns=cols)
-        self.training['fraud'] = y_train
-        self.test = pd.DataFrame(X_test, columns=cols)
-        self.test['fraud'] = y_test
+        index_list = range(len(self.df))
+        X_train, X_test = train_test_split(index_list, train_size=.8, random_state=123)
+        training_data = self.df.iloc[X_train,:]
+        test_data = self.df.iloc[X_test,:]
+
         if training:
-            self.df = self.training
+            self.df = training_data
         else:
             print "using test data"
-            self.df = self.test
+            self.df = test_data
 
 
     def make_target_variable(self):
@@ -76,15 +75,82 @@ class DataCleaning(object):
             self.df[col].fillna('missing', inplace=True)
 
     def drop_all_non_numeric(self):
-        self.df = self.df.head(1000)
+        #self.df = self.df.head(1000)
         self.df = self.df[['fraud', 'body_length', 'channels', 'num_payouts', 'org_twitter']]
         #self.df.drop(['approx_payout_date', 'country',  ])
+
+    def get_text(self, raw_html):
+        soup = BeautifulSoup(raw_html, "html.parser")
+        return soup.get_text()
+
+    def add_plaintext(self):
+        self.df['text_description'] = self.df['description'].apply(self.get_text)
+
+    def assign_text_cluster(self):
+        self.add_plaintext()
+
+    def div_count_pos_neg(self, X, y):
+        """Helper function to divide X & y into positive and negative classes
+        and counts up the number in each.
+
+        Parameters
+        ----------
+        X : ndarray - 2D
+        y : ndarray - 1D
+
+        Returns
+        -------
+        negative_count : Int
+        positive_count : Int
+        X_positives    : ndarray - 2D
+        X_negatives    : ndarray - 2D
+        y_positives    : ndarray - 1D
+        y_negatives    : ndarray - 1D
+        """
+        negatives, positives = y == 0, y == 1
+        negative_count, positive_count = np.sum(negatives), np.sum(positives)
+        X_positives, y_positives = X[positives], y[positives]
+        X_negatives, y_negatives = X[negatives], y[negatives]
+        return negative_count, positive_count, X_positives, \
+               X_negatives, y_positives, y_negatives
+
+    def oversample(self, X, y, tp):
+       """Randomly choose positive observations from X & y, with replacement
+       to achieve the target proportion of positive to negative observations.
+
+       Parameters
+       ----------
+       X  : ndarray - 2D
+       y  : ndarray - 1D
+       tp : float - range [0, 1], target proportion of positive class observations
+
+       Returns
+       -------
+       X_undersampled : ndarray - 2D
+       y_undersampled : ndarray - 1D
+       """
+       if tp < np.mean(y):
+           return X, y
+       neg_count, pos_count, X_pos, X_neg, y_pos, y_neg = self.div_count_pos_neg(X, y)
+       positive_range = np.arange(pos_count)
+       positive_size = (tp * neg_count) / (1 - tp)
+       positive_idxs = np.random.choice(a=positive_range,
+                                        size=int(positive_size),
+                                        replace=True)
+       X_positive_oversampled = X_pos[positive_idxs]
+       y_positive_oversampled = y_pos[positive_idxs]
+       X_oversampled = np.vstack((X_positive_oversampled, X_neg))
+       y_oversampled = np.concatenate((y_positive_oversampled, y_neg))
+
+       return X_oversampled, y_oversampled
+
 
     def clean(self, regression=False):
         """Executes all cleaning methods in proper order. If regression, remove one
         dummy column and scale numeric columns for regularization"""
         self.drop_all_non_numeric()
         self.drop_na()
+        #self.assign_text_cluster()
 
         y = self.df.pop('fraud').values
 
@@ -95,4 +161,6 @@ class DataCleaning(object):
 
         X = self.df.values
 
-        return X, y
+        X_oversampled, y_oversampled = self.oversample(X, y, tp=0.3)
+
+        return X_oversampled, y_oversampled
