@@ -2,12 +2,15 @@ from flask import Flask, render_template, jsonify
 from predict import predict, add_to_db, setup_db
 import cPickle as pickle
 import requests
+from pymongo import MongoClient
 import pymongo
 import json
 from time import sleep
 app = Flask(__name__)
 
-
+client = MongoClient()
+db = client['prediction_database']
+collection = db['prediction_collection']
 
 @app.route('/')
 def index():
@@ -32,7 +35,6 @@ def dashboard():
 if __name__ == '__main__':
     data_path = "data/subset.json"
     pickle_path = "model_files/model_GradientBoostingClassifier.pkl"
-    collection = setup_db()
     with open(pickle_path) as f:
         model = pickle.load(f)
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(host='0.0.0.0', port=8000, debug=True)
