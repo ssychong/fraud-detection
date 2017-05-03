@@ -10,7 +10,7 @@ from sklearn import svm
 from sklearn.preprocessing import StandardScaler
 import re
 import cPickle as pickle
-
+import os
 
 class Pipeline(object):
     """This pipeline object takes in cleaned data and provides methods necessary to train and predict
@@ -31,6 +31,7 @@ class Pipeline(object):
             print "F1 score: ", self.f1_scores[i]
             print "recall score: ", self.recall_scores[i]
             print "precision score: ", self.precision_scores[i]
+            print "accuracy score: ", self.accuracy_scores[i]
 
 
             #self.get_variable_imp(model, feature_names)
@@ -54,7 +55,7 @@ class Pipeline(object):
         """This method is meant to be called in main as a one-stop method for fitting
         the model and generating predictions for cross-validation test error estimation"""
         self.train(x_data, y_data)
-        self.f1_scores, self.recall_scores, self.precision_scores = self.predict_and_cv_score(x_data, y_data)
+        self.f1_scores, self.recall_scores, self.precision_scores, self.accuracy_scores = self.predict_and_cv_score(x_data, y_data)
 
     def train(self, x_data, y_data):
         """Goes through each model in self.list_of_models, finds best hyperparameters, then instantiates each model
@@ -62,13 +63,17 @@ class Pipeline(object):
         for model in self.list_of_models:
             if str(model()).startswith("LogisticRegression"):
                 tuning_params = [{'C': [1, 10, 100, 100000]}]
+                #tuning_params = [{'C': [1]}]
             elif (str(model())).startswith('SVC'):
-                tuning_params = [{'kernel':['rbf'], 'gamma':[1e-3,1e-4],'C':[1,10,100,1000]}]
-            elif (str(model())).startswith('RandomForestClassifier') or (str(model)).startswith('GradientBoostingClassifier'):
-                tuning_params = [{'max_depth': [2]}]
-            elif (str(model())).startswith('SVC'):
-                tuning_params = [{'kernel':['linear'], 'gamma':[1e-3],'C':[10]}]
-            grid = GridSearchCV(model(), tuning_params, cv=5, scoring='f1_macro')
+                #tuning_params = [{'kernel':['linear', 'rbf'], 'gamma':[0.0001, 0.001, .01],'C':[1, 10, 100, 1000]}]
+                tuning_params = [{'kernel':['rbf'], 'gamma':[0.0001],'C':[1000]}]
+            elif (str(model())).startswith('RandomForestClassifier'):
+                #tuning_params = [{'max_depth': [2, 3, 5], 'n_estimators': [1000]}]
+                tuning_params = [{'max_depth': [5], 'n_estimators': [10000]}]
+            elif (str(model())).startswith('GradientBoostingClassifier'):
+                #tuning_params = [{'max_depth': [2, 3, 5], 'learning_rate': [.001, .01, .1, .2]}]
+                tuning_params = [{'max_depth': [5], 'learning_rate': [.2]}]
+            grid = GridSearchCV(model(), tuning_params, n_jobs=2, cv=5, scoring='recall')
             grid.fit(x_data, y_data)
             params = grid.best_params_
             trained_model = grid.best_estimator_
@@ -82,11 +87,13 @@ class Pipeline(object):
         f1_scores = []
         recall_scores = []
         precision_scores = []
+        accuracy_scores = []
         for model in self.trained_models:
             f1_scores.append(cross_val_score(model, x_data, y_data, scoring='f1').mean())
             recall_scores.append(cross_val_score(model, x_data, y_data, scoring='recall').mean())
-            precision_scores.append(cross_val_score(model, x_data, y_data, scoring='f1').mean())
-        return f1_scores, recall_scores, precision_scores
+            precision_scores.append(cross_val_score(model, x_data, y_data, scoring='precision').mean())
+            accuracy_scores.append(cross_val_score(model, x_data, y_data, scoring='accuracy').mean())
+        return f1_scores, recall_scores, precision_scores, accuracy_scores
 
     def score(self, x_test, y_test):
         """This score function is meant to be used only for test data. One best hyperparameters
@@ -272,42 +279,64 @@ def baseline_stats(y_train,y_test):
     confus_mat = np.array(confusion_matrix(y_test, y_pred))
     return precision_score(y_test,y_pred), accuracy_score(y_test,y_pred), recall_score(y_test,y_pred), f1_score(y_test,y_pred), confus_mat
 
-def main():
-    train_path = "data/data.json"
-    #test_path = "data/test.csv"
-    dc_train = DataCleaning(train_path)
-    #dc_test = DataCleaning(test_path)
+def main(models_made=False):
+    path = "data/data.json"
+    dc_train = DataCleaning(path)
     X_train, y_train = dc_train.clean()
-    #X_test, y_test = dc_test.clean()
 
-    # dc_train_reg = DataCleaning(train_path)
+    # dc_test = DataCleaning(path, training=False)
+    #X_test, y_test = dc_test.clean(predict=True, test=True)
+
+    dc_train_reg = DataCleaning(path)
+    X_train_reg, y_train_reg = dc_train_reg.clean(regression=True)
     # dc_test_reg = DataCleaning(test_path)
-    # X_train_reg, y_train_reg = dc_train_reg.clean(regression=True)
+
     # X_test_reg, y_test_reg = dc_test_reg.clean(regression=True)
 
     train_col_names = dc_train.get_column_names()
-    # train_col_names_reg = dc_train_reg.get_column_names()
-
+    train_col_names_reg = dc_train_reg.get_column_names()
+    #
     rf = RandomForestClassifier
     gb = GradientBoostingClassifier
     logr = LogisticRegression
     svm_model = svm.SVC
 
-    pipe = Pipeline([rf, gb])
+    pipe = Pipeline([svm_model])
     pipe.fit_predict(X_train, y_train)
     pipe.print_cv_results(train_col_names, X_train, y_train)
 
-    with open('model.pkl', 'w') as f:
-        pickle.dump(pipe.trained_models[1], f)
+    for trained_model in pipe.trained_models:
+        p = re.compile(r"(.*)\(.*")
+        model_name = re.match(p, str(trained_model)).group(1)
+        filename = "model_" + model_name + ".pkl"
+        with open(filename, 'w') as f:
+            pickle.dump(trained_model, f)
 
+    # code for final test
+    # with open('model.pkl') as f:
+    #     model = pickle.load(f)
+    # pipe = Pipeline([])
+    # pipe.trained_models.append(model)
+    # test_scores = pipe.score(X_test, y_test)
+    # print test_scores
     # pipe2 = Pipeline([logr])
     # pipe2.fit_predict(X_train_reg, y_train_reg)
     # pipe2.print_cv_results(train_col_names_reg, X_train_reg, y_train_reg)
     #
+    # for trained_model in pipe2.trained_models:
+    #     p = re.compile(r"(.*)\(.*")
+    #     model_name = re.match(p, str(trained_model)).group(1)
+    #     filename = "model_" + model_name + ".pkl"
+    #     with open(filename, 'w') as f:
+    #         pickle.dump(trained_model, f)
+
     # plot_rocs([pipe, pipe2], [[X_train, y_train], [X_train_reg, y_train_reg]])
     #
-    # test_scores = pipe.score(X_test, y_test)
-    #print test_scores
+    if models_made:
+        model_folder = "models/"
+        for model_file in os.listdir(model_folder):
+            print model_file
+
 
 if __name__ == '__main__':
-    main()
+    main(models_made=True)
