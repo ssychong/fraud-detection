@@ -76,7 +76,7 @@ class DataCleaning(object):
 
     def drop_all_non_numeric(self):
         #self.df = self.df.head(1000)
-        self.df = self.df[['fraud', 'listed', 'name_length', 'has_header', 'total_cost', 'body_length', 'channels', 'num_payouts', 'org_twitter', 'has_org_name', 'has_analytics', 'has_logo', 'org_facebook', 'has_payee_name']]
+        self.df = self.df[['fraud', 'listed', 'name_length', 'has_header', 'total_cost', 'body_length', 'num_payouts', 'org_twitter', 'has_org_name', 'has_analytics', 'has_logo', 'org_facebook', 'has_payee_name']]
         #self.df.drop(['approx_payout_date', 'country',  ])
 
     def get_text(self, raw_html):
@@ -195,15 +195,17 @@ class DataCleaning(object):
         self.make_previous_payouts_total()
         self.make_total_ticket_cost()
         self.make_num_ticket_types()
-        self.have_or_not(['org_name','payee_name'])
-        self.drop_all_non_numeric()
+        self.have_or_not(['org_name','payee_name', 'payout_type'])
+        #self.drop_all_non_numeric()
         self.fix_have_header()
-        self.zero_versus_rest(['org_facebook', 'org_twitter'])
+        self.zero_versus_rest(['org_facebook', 'org_twitter', 'channels', 'delivery_method', 'num_order', 'num_payouts', 'user_age'])
+        todrop = ['acct_type', 'currency', 'description', 'email_domain', 'event_created','event_end', 'event_published', 'event_start', 'fb_published','gts', 'has_analytics', 'has_logo', 'name','object_id','payee_name',  'previous_payouts','sale_duration', 'sale_duration2', 'show_map', 'ticket_types',\
+            'user_created', 'user_type', 'venue_address', 'venue_country','venue_latitude', 'venue_longitude', 'venue_name','venue_state', 'org_desc', 'org_name', 'country', 'payout_type']
+        self.drop_some_cols(todrop)
 
 
 
-
-        import ipdb; ipdb.set_trace()
+        #import ipdb; ipdb.set_trace()
         #self.drop_na()
 
         #self.assign_text_cluster()
