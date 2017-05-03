@@ -9,7 +9,13 @@ import numpy as np
 from sklearn import svm
 from sklearn.preprocessing import StandardScaler
 import re
+<<<<<<< HEAD
+from sklearn.metrics import precision_score, recall_score, confusion_matrix, classification_report, accuracy_score, f1_score
+=======
+import cPickle as pickle
+>>>>>>> d54d88268563a9e5fc72305fcd2f3552af627a07
 
+import random
 
 class Pipeline(object):
     """This pipeline object takes in cleaned data and provides methods necessary to train and predict
@@ -61,11 +67,12 @@ class Pipeline(object):
         for model in self.list_of_models:
             if str(model()).startswith("LogisticRegression"):
                 tuning_params = [{'C': [1, 10, 100, 100000]}]
+            elif (str(model())).startswith('SVC'):
+                tuning_params = [{'kernel':['rbf'], 'gamma':[1e-3,1e-4],'C':[1,10,100,1000]}]
             elif (str(model())).startswith('RandomForestClassifier') or (str(model)).startswith('GradientBoostingClassifier'):
                 tuning_params = [{'max_depth': [2]}]
-            ### add gridsearch for SVM
-            elif (str(model())).startswith('svm'):
-                tuning_params = [{'kernel':['rbf'], 'gamma':[1e-3,1e-4],'C':[1,10,100,1000]}]
+            elif (str(model())).startswith('SVC'):
+                tuning_params = [{'kernel':['linear'], 'gamma':[1e-3],'C':[10]}]
             grid = GridSearchCV(model(), tuning_params, cv=5, scoring='f1_macro')
             grid.fit(x_data, y_data)
             params = grid.best_params_
@@ -263,12 +270,18 @@ def baseline(y_train):
         isfraud = True
     return isfraud
 
-def baseline_stats(y_train,y_test):
+def baseline_stats(y_train):
     y_pred = []
-    for y in range(len(y_test)):
-        y_pred.append(baseline(y_train))
-    confus_mat = np.array(confusion_matrix(y_test, y_pred))
-    return precision_score(y_test,y_pred), accuracy_score(y_test,y_pred), recall_score(y_test,y_pred), f1_score(y_test,y_pred), confus_mat
+    prob_fraud = sum(y_train)/float(len(y_train))
+    isfraud = None
+    for y in range(len(y_train)):
+        if random.random() > prob_fraud:
+            isfraud = False
+        else:
+            isfraud = True
+        y_pred.append(isfraud)
+    # confus_mat = np.array(confusion_matrix(y_train, y_pred))
+    return precision_score(y_train,y_pred), accuracy_score(y_train,y_pred), recall_score(y_train,y_pred), f1_score(y_train,y_pred)
 
 def main():
     train_path = "data/data.json"
@@ -291,9 +304,12 @@ def main():
     logr = LogisticRegression
     svm_model = svm.SVC
 
-    pipe = Pipeline([rf, gb, svm_model])
+    pipe = Pipeline([rf, gb])
     pipe.fit_predict(X_train, y_train)
     pipe.print_cv_results(train_col_names, X_train, y_train)
+
+    with open('model.pkl', 'w') as f:
+        pickle.dump(pipe.trained_models[1], f)
 
     # pipe2 = Pipeline([logr])
     # pipe2.fit_predict(X_train_reg, y_train_reg)
