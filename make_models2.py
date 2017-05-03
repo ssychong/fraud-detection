@@ -61,11 +61,12 @@ class Pipeline(object):
         for model in self.list_of_models:
             if str(model()).startswith("LogisticRegression"):
                 tuning_params = [{'C': [1, 10, 100, 100000]}]
+            elif (str(model())).startswith('SVC'):
+                tuning_params = [{'kernel':['rbf'], 'gamma':[1e-3,1e-4],'C':[1,10,100,1000]}]
             elif (str(model())).startswith('RandomForestClassifier') or (str(model)).startswith('GradientBoostingClassifier'):
                 tuning_params = [{'max_depth': [2]}]
             ### add gridsearch for SVM
-            elif (str(model())).startswith('svm'):
-                tuning_params = [{'kernel':['rbf'], 'gamma':[1e-3,1e-4],'C':[1,10,100,1000]}]
+
             grid = GridSearchCV(model(), tuning_params, cv=5, scoring='f1_macro')
             grid.fit(x_data, y_data)
             params = grid.best_params_
