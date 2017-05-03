@@ -11,7 +11,6 @@ from sklearn.preprocessing import StandardScaler
 import re
 from sklearn.metrics import precision_score, recall_score, confusion_matrix, classification_report, accuracy_score, f1_score
 import cPickle as pickle
-import os
 import random
 
 
@@ -341,11 +340,8 @@ def main(models_made=False):
 
     # plot_rocs([pipe, pipe2], [[X_train, y_train], [X_train_reg, y_train_reg]])
     #
-    if models_made:
-        model_folder = "models/"
-        for model_file in os.listdir(model_folder):
-            print model_file
+
 
 
 if __name__ == '__main__':
-    main(models_made=True)
+    main()
