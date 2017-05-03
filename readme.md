@@ -1,34 +1,49 @@
-For the next two days we will deal with the entire end to end pipeline of data science through a case study.  We have touched on aspects of this throughout the course but have not yet put all the pieces together.
+#### eCommerce Fraud Detection Case Study
 
-We will also touch on some new topics including:
-* cloud services including AWS
-* web applications (and the technology of the web)
-* deploying a DS application
-* a touch of data visualization/presentation
+Team members: Corinne Carlson, James Woodruff, Neil Aronson, Stephanie Chong, Yulia Yukina
 
-#### Themes (you will be assessed on this)
+#### Project Scope
+For this case study, we were tasked with developing a model to help an online event ticketing company detect fraud.
 
-* Software best practices (proper encapsulation and functions)
-* product focus
-* deploy models
-* project scoping -- independence
+Defining "fraud": Our dataset provided us with an "account type" category -- account types with the term "fraud" were classified as fraud, all other account types (including spam) were classified as non-fraud.
 
-#### Rough timeline 
+Deliverables:
+* Flask app with API
+* Web based front-end to enable quick triage of potential fraud
 
-* Wednesday: Project scoping, Model building, and an intro to Web apps
-* Thursday: Web app and deployment
+#### Data Cleaning
+We did the following to clean the data:
+* Converted time stamps into readable formats
+* Imputed missing / whitespace data with null values
+* Turned categorical variables into numerical values
+* Dropped "account type" to prevent leakage
+* Set aside text-based features due to time limitations and in consideration of computational/modeling speed
 
-#### Deliverables
+#### Feature Engineering
+The raw dataset has 43 features. For the feature engineering stage, we created the following new variables:
+* Number of previous payouts: Most instances of fraud had no previous payouts, so we thought this feature would have high signal in predicting fraud.
+* Number of ticket types, total ticket cost, total ticket quantity, total revenue: Extracted from "ticket type" data
+* Has payee name, has org name, has payout type: Systematically missing data seemed to have high correlation with fraud.
 
-* model (properly commented and encapsulated on Github with a README)
-* exposed API
-* Data visualization (extra)
+#### Modeling & Results
+We selected the following models to run on our cleaned data:
+* Logistic regression
+* Random Forest
+* Gradient Boosting
+* SVM
 
-#### Assessment
+We optimized the parameters for these models by using recall as our priority metric, because our goal is to minimize false negatives. This is because we assumed that it would be significantly more costly to misclassify true fraudulent cases than to mistake non-fraud cases as fraud.
+Out of these models, gradient boosting provided the best results, with recall of 0.980 and precision of 0.978.
+Our baseline model detects fraud by assigning probabilities to instances that were calculated from the training data. This returns a result of 0.299 recall and 0.581 accuracy.
 
-* You will be assessed both on quality and cleanliness of code
-* as well as a well functioning solution
+#### Next Steps
+* Conduct NLP on the text data
+* Create profit curve / perform cost-benefit analysis
+* Web-based dashboard to quickly predict fraud 
 
-#### Notes
-
-* [building your model](model_notes.md): notes on how to get started with the dataset and how to save your model once you've trained it.
+#### Files
+* clean_data.py: Python script that cleans and engineers features on the raw data.
+* make_models2.py: Python script that imports the data, develops the model, and stores the model.
+* predict.py: Python script that reads in and vectorizes a single instance, and predicts the probability that the event is fraud.
+* app.py: Python script that retrieves new data from server, calls predict.py, and displays predictions. 
+* presentation.pdf: Presentation deck with a summary of our process and findings.
