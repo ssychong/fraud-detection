@@ -76,7 +76,7 @@ class DataCleaning(object):
 
     def drop_all_non_numeric(self):
         #self.df = self.df.head(1000)
-        self.df = self.df[['fraud', 'body_length', 'channels', 'num_payouts', 'org_twitter']]
+        self.df = self.df[['fraud', 'listed', 'name_length', 'has_header', 'total_cost', 'body_length', 'channels', 'num_payouts', 'org_twitter', 'has_org_name', 'has_analytics', 'has_logo', 'org_facebook', 'has_payee_name']]
         #self.df.drop(['approx_payout_date', 'country',  ])
 
     def get_text(self, raw_html):
@@ -144,12 +144,68 @@ class DataCleaning(object):
 
        return X_oversampled, y_oversampled
 
+    def drop_some_cols(self, columns):
+        for col in columns:
+            self.df = self.df.drop(col,axis=1)
+
+    def fix_listed(self):
+        self.df['listed'] = self.df['listed'].astype(str)
+        d = {'y':1,'n':0}
+        self.df['listed'] = self.df['listed'].map(d)
+
+    def make_previous_payouts_total(self):
+        self.df['num_previous_payouts'] = self.df['previous_payouts'].apply(len)
+
+    def make_total_ticket_cost(self):
+        total_cost = []
+        for row in self.df['ticket_types']:
+            cost = 0
+            for i in range(len(row)):
+                cost += row[i]['cost']
+            total_cost.append(cost)
+        self.df['total_cost'] = total_cost
+
+    def make_num_ticket_types(self):
+        self.df['num_ticket_types'] = self.df['ticket_types'].apply(len)
+
+    def have_or_not(self,columns):
+        """Fill in missing columns / whitespace with 'nan', then create new column to indicate if event has column value or not"""
+        #org name, payee name
+        for column in columns:
+            self.df[column] = self.df[column].replace('',np.nan)
+            self.df['has_'+str(column)] = self.df[column].notnull().astype(int)
+
+    def fix_have_header(self):
+        self.mark_missing(['has_header'])
+        self.dummify(['has_header'])
+
+    def zero_versus_rest(self, columns):
+        for col in columns:
+            self.df[col+"_is_0"] = self.df[col]==0.0
+            self.df[col+"_not_0"] = self.df[col]!=0.0
+            self.df = self.df.drop(col, axis=1)
+
+
+
 
     def clean(self, regression=False):
         """Executes all cleaning methods in proper order. If regression, remove one
         dummy column and scale numeric columns for regularization"""
+        self.fix_listed()
+        self.make_previous_payouts_total()
+        self.make_total_ticket_cost()
+        self.make_num_ticket_types()
+        self.have_or_not(['org_name','payee_name'])
         self.drop_all_non_numeric()
-        self.drop_na()
+        self.fix_have_header()
+        self.zero_versus_rest(['org_facebook', 'org_twitter'])
+
+
+
+
+        import ipdb; ipdb.set_trace()
+        #self.drop_na()
+
         #self.assign_text_cluster()
 
         y = self.df.pop('fraud').values
