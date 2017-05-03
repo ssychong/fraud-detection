@@ -9,6 +9,7 @@ import numpy as np
 from sklearn import svm
 from sklearn.preprocessing import StandardScaler
 import re
+import cPickle as pickle
 
 
 class Pipeline(object):
@@ -64,8 +65,8 @@ class Pipeline(object):
             elif (str(model())).startswith('RandomForestClassifier') or (str(model)).startswith('GradientBoostingClassifier'):
                 tuning_params = [{'max_depth': [2]}]
             ### add gridsearch for SVM
-            elif (str(model())).startswith('svm'):
-                tuning_params = [{'kernel':['rbf'], 'gamma':[1e-3,1e-4],'C':[1,10,100,1000]}]
+            elif (str(model())).startswith('SVC'):
+                tuning_params = [{'kernel':['linear'], 'gamma':[1e-3],'C':[10]}]
             grid = GridSearchCV(model(), tuning_params, cv=5, scoring='f1_macro')
             grid.fit(x_data, y_data)
             params = grid.best_params_
@@ -291,9 +292,12 @@ def main():
     logr = LogisticRegression
     svm_model = svm.SVC
 
-    pipe = Pipeline([rf, gb, svm_model])
+    pipe = Pipeline([rf, gb])
     pipe.fit_predict(X_train, y_train)
     pipe.print_cv_results(train_col_names, X_train, y_train)
+
+    with open('model.pkl', 'w') as f:
+        pickle.dump(pipe.trained_models[1], f)
 
     # pipe2 = Pipeline([logr])
     # pipe2.fit_predict(X_train_reg, y_train_reg)

@@ -188,7 +188,7 @@ class DataCleaning(object):
 
 
 
-    def clean(self, regression=False):
+    def clean(self, regression=False, predict=False):
         """Executes all cleaning methods in proper order. If regression, remove one
         dummy column and scale numeric columns for regularization"""
         self.fix_listed()
@@ -220,7 +220,8 @@ class DataCleaning(object):
                 self.df[col] = scale(self.df[col])
 
         X = self.df.values
+        if not predict:
+            X_oversampled, y_oversampled = self.oversample(X, y, tp=0.3)
+            return X_oversampled, y_oversampled
 
-        X_oversampled, y_oversampled = self.oversample(X, y, tp=0.3)
-
-        return X_oversampled, y_oversampled
+        return X, y
