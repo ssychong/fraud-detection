@@ -14,8 +14,9 @@ class DataCleaning(object):
         Args:
             fileapth (str): location of file with csv data
         """
-        self.df = pd.read_json(filepath)
+
         if not predict:
+            self.df = pd.read_json(filepath)
             self.df['fraud'] = self.df['acct_type'].isin(['fraudster_event', 'fraudster', 'fraudster_att'])
             index_list = range(len(self.df))
             X_train, X_test = train_test_split(index_list, train_size=.8, random_state=123)
@@ -27,10 +28,15 @@ class DataCleaning(object):
             else:
                 print "using test data"
                 self.df = test_data
+        else: #predict=True
+            one_row = pd.Series(filepath)
+            self.df = pd.DataFrame([one_row])
+
 
     def dummify(self, columns):
         """Create dummy columns for categorical variables"""
-        dummies = pd.get_dummies(self.df[columns], prefix=columns)
+        dummies = pd.get_dummies(self.df[columns], columns=columns,
+                                prefix=columns)
         self.df = self.df.drop(columns, axis=1)
         self.df = pd.concat([self.df,dummies], axis=1)
 
@@ -179,19 +185,27 @@ class DataCleaning(object):
         self.make_total_tickets()
         self.make_num_ticket_types()
         self.have_or_not(['org_name','payee_name', 'payout_type'])
-        self.fix_have_header()
+        #self.fix_have_header()
         self.zero_versus_rest(['org_facebook', 'org_twitter', 'channels', 'delivery_method', 'num_order', 'num_payouts', 'user_age'])
-        todrop = ['acct_type', 'approx_payout_date', 'country', 'currency', 'description', 'email_domain', 'event_created', 'event_end', 'event_published', \
-                    'event_start', 'fb_published', 'gts', 'has_analytics', 'has_logo', 'name', 'object_id', 'org_desc', 'org_name', \
-                    'payee_name', 'payout_type', 'previous_payouts', 'sale_duration', 'sale_duration2', 'show_map', 'ticket_types', \
-                    'user_created', 'user_type', 'venue_address', 'venue_country', 'venue_latitude', 'venue_longitude', 'venue_name', 'venue_state']
+        if predict:
+            todrop = ['approx_payout_date', 'country', 'currency', 'description', 'email_domain', 'event_created', 'event_end', 'event_published', \
+                        'event_start', 'fb_published', 'gts', 'has_analytics', 'has_logo', 'name', 'object_id', 'org_desc', 'org_name', \
+                        'payee_name', 'payout_type', 'previous_payouts', 'sale_duration', 'sale_duration2', 'show_map', 'ticket_types', \
+                        'user_created', 'user_type', 'venue_address', 'venue_country', 'venue_latitude', 'venue_longitude', 'venue_name', 'venue_state', 'has_header']
+            # self.df['has_header_0.0'] = 0
+            # self.df['has_header_1.0'] = 0
+            # self.df['has_header_missing'] = 0
+        else:
+            todrop = ['acct_type', 'approx_payout_date', 'country', 'currency', 'description', 'email_domain', 'event_created', 'event_end', 'event_published', \
+                        'has_header', 'event_start', 'fb_published', 'gts', 'has_analytics', 'has_logo', 'name', 'object_id', 'org_desc', 'org_name', \
+                        'payee_name', 'payout_type', 'previous_payouts', 'sale_duration', 'sale_duration2', 'show_map', 'ticket_types', \
+                        'user_created', 'user_type', 'venue_address', 'venue_country', 'venue_latitude', 'venue_longitude', 'venue_name', 'venue_state']
         self.drop_some_cols(todrop)
         #import ipdb; ipdb.set_trace()
 
         #self.drop_na()
 
         #self.assign_text_cluster()
-
 
 
         if regression:

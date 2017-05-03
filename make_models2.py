@@ -12,6 +12,7 @@ import re
 from sklearn.metrics import precision_score, recall_score, confusion_matrix, classification_report, accuracy_score, f1_score
 import cPickle as pickle
 import random
+import os
 
 
 class Pipeline(object):
@@ -295,21 +296,29 @@ def main(models_made=False):
     # dc_test = DataCleaning(path, training=False)
     #X_test, y_test = dc_test.clean(predict=True, test=True)
 
-    dc_train_reg = DataCleaning(path)
-    X_train_reg, y_train_reg = dc_train_reg.clean(regression=True)
-    # dc_test_reg = DataCleaning(test_path)
+    # dc_train_reg = DataCleaning(path)
+    # X_train_reg, y_train_reg = dc_train_reg.clean(regression=True)
+    # # dc_test_reg = DataCleaning(test_path)
 
     # X_test_reg, y_test_reg = dc_test_reg.clean(regression=True)
 
     train_col_names = dc_train.get_column_names()
-    train_col_names_reg = dc_train_reg.get_column_names()
+    print train_col_names
+    #train_col_names_reg = dc_train_reg.get_column_names()
+    if models_made:
+        pipe = Pipeline([])
+        model_folder = "model_files/"
+        for model_file in os.listdir(model_folder):
+            pipe.train_models.append(model_file)
+        plot_rocs([])
+        return
     #
     rf = RandomForestClassifier
     gb = GradientBoostingClassifier
     logr = LogisticRegression
     svm_model = svm.SVC
 
-    pipe = Pipeline([svm_model])
+    pipe = Pipeline([gb])
     pipe.fit_predict(X_train, y_train)
     pipe.print_cv_results(train_col_names, X_train, y_train)
 
