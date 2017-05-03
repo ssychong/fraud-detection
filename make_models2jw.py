@@ -7,7 +7,7 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import svm
-from sklearn.preprocessing import StandardScalar
+from sklearn.preprocessing import StandardScaler
 import re
 
 
@@ -291,7 +291,7 @@ def main():
     logr = LogisticRegression
     svm_model = svm.SVC
 
-    pipe = Pipeline([rf, gb, svm])
+    pipe = Pipeline([rf, gb, svm_model])
     pipe.fit_predict(X_train, y_train)
     pipe.print_cv_results(train_col_names, X_train, y_train)
 

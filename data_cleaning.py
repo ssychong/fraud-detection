@@ -203,7 +203,7 @@ class DataCleaning(object):
 
 
 
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         #self.drop_na()
 
         #self.assign_text_cluster()
