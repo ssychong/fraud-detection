@@ -1,19 +1,22 @@
-from make_models2 import main
+#from make_models2 import main
 from data_cleaning import DataCleaning
 import cPickle as pickle
 
-subset = 'data/subset.json'
+def unpickle_predict(data_path, pickle_path):
+    predictions = []
+    with open(pickle_path) as f:
+        model = pickle.load(f)
+    cleaned_example = DataCleaning(data_path)
+    X_train, y_train = cleaned_example.clean(predict=True)
+    for row in X_train:
+        row_data = row.reshape(1, -1)
+        prob = model.predict_proba(row_data)[:,1][0]
+        predictions.append(prob)
+    return predictions
 
-predictions = []
-
-# def unpickle_predict(path):
-dc = DataCleaning(subset)
-X_train, y_train = dc.clean()
-X = X_train.reshape(1, -1)
-for idx, line in enumerate(X):
-    with open('gb_model.pkl') as f:
-        gb_model = pickle.load(f)
-    gb_model.fit(line, y_train[idx])
-    pred = gb_model.predict(line)
-    prob = gb_model.predict_proba(line)
-    print(pred, prob)
+if __name__ == '__main__':
+    data_path = "data/subset.json"
+    pickle_path = "model.pkl"
+    saved = unpickle_predict(data_path, pickle_path)
+    print len(saved)
+    print saved
